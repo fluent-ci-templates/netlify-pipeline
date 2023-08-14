@@ -5,7 +5,6 @@
     "https://deno.land/std@0.150.0/media_types/mod.ts": "2d4b6f32a087029272dc59e0a55ae3cc4d1b27b794ccf528e94b1925795b3118",
     "https://deno.land/std@0.150.0/media_types/vendor/mime-db.v1.52.0.ts": "724cee25fa40f1a52d3937d6b4fbbfdd7791ff55e1b7ac08d9319d5632c7f5af",
     "https://deno.land/std@0.191.0/fmt/colors.ts": "d67e3cd9f472535241a8e410d33423980bec45047e343577554d3356e1f0ef4e",
-    "https://deno.land/x/codecov_pipeline@v0.1.0/src/dagger/jobs.ts": "e980479e0bcd759773286145f3345ce7e1662c7d6734bfc4bbf8e6bfc93b974e",
     "https://deno.land/x/nix_installer_pipeline@v0.3.6/src/dagger/steps.ts": "a34aea3753c7079de5877f592ce31f30d05d552155729ff3e695d77326405133",
     "https://deno.land/x/xhr@0.3.0/mod.ts": "094aacd627fd9635cd942053bf8032b5223b909858fa9dc8ffa583752ff63b20",
     "https://esm.sh/stringify-tree@1.1.1": "8d994a105481fa944515323d89bd2596c1de79f3d9bd1386266463934716eca0",

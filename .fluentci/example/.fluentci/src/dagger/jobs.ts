@@ -1,5 +1,4 @@
 import Client from "@dagger.io/dagger";
-import { upload } from "https://deno.land/x/codecov_pipeline@v0.1.0/src/dagger/jobs.ts";
 import { withDevbox } from "https://deno.land/x/nix_installer_pipeline@v0.3.6/src/dagger/steps.ts";
 import { existsSync } from "fs";
 
@@ -8,7 +7,6 @@ export enum Job {
   lint = "lint",
   test = "test",
   deploy = "deploy",
-  codecov = "codecov",
 }
 
 const baseCtr = (client: Client, pipeline: string) => {
@@ -73,7 +71,7 @@ export const test = async (
   options: { ignore: string[] } = { ignore: [] }
 ) => {
   const context = client.host().directory(src);
-  let command = ["deno", "test", "-A", "--coverage=coverage", "--lock-write"];
+  let command = ["deno", "test", "-A", "--lock-write"];
 
   if (options.ignore.length > 0) {
     command = command.concat([`--ignore=${options.ignore.join(",")}`]);
@@ -90,10 +88,7 @@ export const test = async (
     })
     .withWorkdir("/app")
     .withMountedCache("/root/.cache/deno", client.cacheVolume("deno-cache"))
-    .withExec(command)
-    .withExec(["sh", "-c", "deno coverage ./coverage --lcov > coverage.lcov"]);
-
-  await ctr.file("/app/coverage.lcov").export("./coverage.lcov");
+    .withExec(command);
 
   const result = await ctr.stdout();
 
@@ -178,14 +173,11 @@ export type JobExec = (
       }
     ) => Promise<void>);
 
-export const codecov = upload;
-
 export const runnableJobs: Record<Job, JobExec> = {
   [Job.fmt]: fmt,
   [Job.lint]: lint,
   [Job.test]: test,
   [Job.deploy]: deploy,
-  [Job.codecov]: upload,
 };
 
 export const jobDescriptions: Record<Job, string> = {
@@ -193,5 +185,4 @@ export const jobDescriptions: Record<Job, string> = {
   [Job.lint]: "Lint your code",
   [Job.test]: "Run your tests",
   [Job.deploy]: "Deploy your code to Deno Deploy",
-  [Job.codecov]: "Upload your code coverage to Codecov",
 };
