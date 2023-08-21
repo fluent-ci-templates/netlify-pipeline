@@ -33,7 +33,7 @@ steps:
         sudo mv bin/dagger /usr/local/bin
         dagger version
     displayName: Setup Dagger
-  - script: dagger run fluentci heroku_pipeline
+  - script: dagger run fluentci netlify_pipeline
     displayName: Run Dagger Pipelines
 variables:
   NETLIFY_AUTH_TOKEN: $(NETLIFY_AUTH_TOKEN)
