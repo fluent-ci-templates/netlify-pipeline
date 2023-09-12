@@ -1,5 +1,5 @@
-import { Client } from "@dagger.io/dagger";
-import { withDevbox } from "https://deno.land/x/nix_installer_pipeline@v0.3.6/src/dagger/steps.ts";
+import Client from "@fluentci.io/dagger";
+import { withDevbox } from "https://deno.land/x/nix_installer_pipeline@v0.4.1/src/dagger/steps.ts";
 
 export enum Job {
   deploy = "deploy",
