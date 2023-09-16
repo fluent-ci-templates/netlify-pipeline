@@ -18,16 +18,14 @@ dagger run fluentci netlify_pipeline
 
 ## Environment Variables
 
-| Variable           | Description                             |
-|--------------------|-----------------------------------------|
-| NETLIFY_AUTH_TOKEN | Your Netlify Access Token               |
-| NETLIFY_SITE_ID    | Your Netlify Site ID                    |
-| NETLIFY_SITE_DIR   | Your directory to deploy (default: `.`) |
+| Variable           | Description               |
+|--------------------|---------------------------|
+| NETLIFY_AUTH_TOKEN | Your Netlify Access Token |
 
 ## Jobs
 
-| Job     | Description                          |
-|---------|--------------------------------------|
+| Job     | Description                      |
+|---------|----------------------------------|
 | deploy  | Deploys your application to Netlify. |
 
 ## Programmatic usage
@@ -36,7 +34,7 @@ You can also use this pipeline programmatically:
 
 ```typescript
 import Client, { connect } from "https://sdk.fluentci.io/v0.1.7/mod.ts";
-import { deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.5.1/mod.ts";
+import { deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.5.0/mod.ts";
 
 function pipeline(src = ".") {
   connect(async (client: Client) => {
