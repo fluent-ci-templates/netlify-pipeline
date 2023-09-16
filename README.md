@@ -37,7 +37,7 @@ You can also use this pipeline programmatically:
 
 ```typescript
 import Client, { connect } from "https://sdk.fluentci.io/v0.1.7/mod.ts";
-import { build, deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.5.1/mod.ts";
+import { build, deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.5.2/mod.ts";
 
 function pipeline(src = ".") {
   connect(async (client: Client) => {
