@@ -12,7 +12,7 @@ export const build = async (client: Client, src = ".") => {
   const context = client.host().directory(src);
   const ctr = withDevbox(
     client
-      .pipeline(Job.deploy)
+      .pipeline(Job.build)
       .container()
       .from("alpine:latest")
       .withExec(["apk", "update"])
@@ -24,7 +24,7 @@ export const build = async (client: Client, src = ".") => {
       "/root/.local/share/devbox/global",
       client.cacheVolume("devbox-global")
     )
-    .withExec(["devbox", "global", "add", "nodejs@18.16.1", "bun@0.7.0"])
+    .withExec(["devbox", "global", "add", "nodejs@18.16.1", "bun@1.0.0"])
     .withMountedCache(
       "/root/.bun/install/cache",
       client.cacheVolume("bun-cache")
@@ -81,7 +81,7 @@ export const deploy = async (client: Client, src = ".") => {
       "/root/.local/share/devbox/global",
       client.cacheVolume("devbox-global")
     )
-    .withExec(["devbox", "global", "add", "nodejs@18.16.1", "bun@0.7.0"])
+    .withExec(["devbox", "global", "add", "nodejs@18.16.1", "bun@1.0.0"])
     .withMountedCache(
       "/root/.bun/install/cache",
       client.cacheVolume("bun-cache")
