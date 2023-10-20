@@ -1,4 +1,4 @@
-import Client from "../../deps.ts";
+import Client, { connect } from "../../deps.ts";
 
 export enum Job {
   build = "build",
@@ -7,86 +7,107 @@ export enum Job {
 
 export const exclude = [".devbox", "node_modules", ".fluentci"];
 
-export const build = async (client: Client, src = ".") => {
-  const context = client.host().directory(src);
-  const ctr = client
-    .pipeline(Job.build)
-    .container()
-    .from("ghcr.io/fluent-ci-templates/bun:latest")
-    .withMountedCache(
-      "/root/.bun/install/cache",
-      client.cacheVolume("bun-cache")
-    )
-    .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
-    .withDirectory("/app", context, { exclude })
-    .withWorkdir("/app")
-    .withExec(["sh", "-c", 'eval "$(devbox global shellenv)" && bun install'])
-    .withExec([
-      "sh",
-      "-c",
-      'eval "$(devbox global shellenv)" && bun run build',
-    ]);
+export const build = async (src = ".") => {
+  await connect(async (client: Client) => {
+    const context = client.host().directory(src);
+    const ctr = client
+      .pipeline(Job.build)
+      .container()
+      .from("ghcr.io/fluentci-io/bun:latest")
+      .withMountedCache(
+        "/root/.bun/install/cache",
+        client.cacheVolume("bun-cache")
+      )
+      .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
+      .withDirectory("/app", context, { exclude })
+      .withWorkdir("/app")
+      .withExec(["sh", "-c", 'eval "$(devbox global shellenv)" && bun install'])
+      .withExec([
+        "sh",
+        "-c",
+        'eval "$(devbox global shellenv)" && bun run build',
+      ]);
 
-  const result = await ctr.stdout();
+    const result = await ctr.stdout();
 
-  await ctr.directory("/app/dist").export("./dist");
+    await ctr.directory("/app/dist").export("./dist");
 
-  console.log(result);
+    console.log(result);
+  });
+  return "Done";
 };
 
-export const deploy = async (client: Client, src = ".") => {
-  const context = client.host().directory(src);
+export const deploy = async (
+  src = ".",
+  token?: string,
+  siteId?: string,
+  siteDir?: string
+) => {
+  await connect(async (client: Client) => {
+    const context = client.host().directory(src);
 
-  if (!Deno.env.has("NETLIFY_AUTH_TOKEN")) {
-    console.log("NETLIFY_AUTH_TOKEN is not set");
-    Deno.exit(1);
-  }
+    if (!Deno.env.has("NETLIFY_AUTH_TOKEN") && !token) {
+      console.log("NETLIFY_AUTH_TOKEN is not set");
+      Deno.exit(1);
+    }
 
-  if (!Deno.env.has("NETLIFY_SITE_ID")) {
-    console.log("NETLIFY_SITE_ID is not set");
-    Deno.exit(1);
-  }
+    if (!Deno.env.has("NETLIFY_SITE_ID") && !siteId) {
+      console.log("NETLIFY_SITE_ID is not set");
+      Deno.exit(1);
+    }
 
-  const dir = Deno.env.get("NETLIFY_SITE_DIR") || ".";
+    const dir = Deno.env.get("NETLIFY_SITE_DIR") || siteDir || ".";
 
-  let deployCommand = `eval "$(devbox global shellenv)" && bun x netlify-cli status && bun x netlify-cli deploy --dir ${dir}`;
+    let deployCommand = `eval "$(devbox global shellenv)" && bun x netlify-cli status && bun x netlify-cli deploy --dir ${dir}`;
 
-  if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
-    deployCommand += " --prod";
-  }
+    if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
+      deployCommand += " --prod";
+    }
 
-  const ctr = client
-    .pipeline(Job.deploy)
-    .container()
-    .from("ghcr.io/fluent-ci-templates/bun:latest")
-    .withMountedCache(
-      "/root/.bun/install/cache",
-      client.cacheVolume("bun-cache")
-    )
-    .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
-    .withEnvVariable("NETLIFY_AUTH_TOKEN", Deno.env.get("NETLIFY_AUTH_TOKEN")!)
-    .withEnvVariable("NETLIFY_SITE_ID", Deno.env.get("NETLIFY_SITE_ID")!)
-    .withDirectory("/app", context, { exclude })
-    .withWorkdir("/app")
-    .withExec(["sh", "-c", deployCommand]);
+    const ctr = client
+      .pipeline(Job.deploy)
+      .container()
+      .from("ghcr.io/fluentci-io/bun:latest")
+      .withMountedCache(
+        "/root/.bun/install/cache",
+        client.cacheVolume("bun-cache")
+      )
+      .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
+      .withEnvVariable(
+        "NETLIFY_AUTH_TOKEN",
+        Deno.env.get("NETLIFY_AUTH_TOKEN") || token!
+      )
+      .withEnvVariable(
+        "NETLIFY_SITE_ID",
+        Deno.env.get("NETLIFY_SITE_ID") || siteId!
+      )
+      .withDirectory("/app", context, { exclude })
+      .withWorkdir("/app")
+      .withExec(["sh", "-c", deployCommand]);
 
-  const result = await ctr.stdout();
+    const result = await ctr.stdout();
 
-  console.log(result);
+    console.log(result);
+  });
+  return "Done";
 };
 
 export type JobExec = (
-  client: Client,
-  src?: string
+  src?: string,
+  token?: string,
+  siteId?: string,
+  siteDir?: string
 ) =>
-  | Promise<void>
+  | Promise<string>
   | ((
-      client: Client,
       src?: string,
+      token?: string,
+      siteId?: string,
+      siteDir?: string,
       options?: {
         ignore: string[];
       }
-    ) => Promise<void>);
+    ) => Promise<string>);
 
 export const runnableJobs: Record<Job, JobExec> = {
   [Job.build]: build,
