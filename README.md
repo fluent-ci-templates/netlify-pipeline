@@ -33,7 +33,13 @@ dagger run fluentci netlify_pipeline
 
 ```graphql
 build(src: String!): String
-deploy(siteDir: String!, siteId: String!, src: String!, token: String!): String
+
+deploy(
+  siteDir: String!, 
+  siteId: String!, 
+  src: String!, 
+  token: String!
+): String
 ```
 
 ## Programmatic usage
