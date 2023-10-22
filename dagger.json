@@ -1,0 +1,5 @@
+{
+  "root": "",
+  "name": "netlify",
+  "sdkRuntime": "tsiry/dagger-sdk-deno"
+}
