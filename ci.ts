@@ -1,12 +1,7 @@
-const command = new Deno.Command(Deno.execPath(), {
-  args: [
-    "run",
-    "-A",
-    "--import-map=https://deno.land/x/netlify_pipeline/import_map.json",
-    "https://deno.land/x/netlify_pipeline/src/dagger/runner.ts",
-  ],
-});
+import {
+  build,
+  deploy,
+} from "https://pkg.fluentci.io/netlify_pipeline@v0.6.0/mod.ts";
 
-const { stdout } = await command.output();
-
-console.log(new TextDecoder().decode(stdout));
+await build();
+await deploy();

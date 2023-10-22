@@ -8,7 +8,7 @@ export function generateYaml() {
   };
 
   const setupDagger = `\
-  curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.8.1 sh
+  curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.8.8 sh
   sudo mv bin/dagger /usr/local/bin
   dagger version`;
 
@@ -34,11 +34,11 @@ export function generateYaml() {
       },
       {
         name: "Run Dagger Pipelines",
-        run: "dagger run fluentci . fmt lint test",
+        run: "fluentci run . fmt lint test",
       },
       {
         name: "Upload to Codecov",
-        run: "dagger run fluentci codecov_pipeline",
+        run: "fluentci run codecov_pipeline",
         env: {
           CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}",
         },
