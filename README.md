@@ -31,15 +31,17 @@ dagger run fluentci netlify_pipeline
 | build   | Builds your application.             |
 | deploy  | Deploys your application to Netlify. |
 
-```graphql
-build(src: String!): String
+```typescript
+build(
+  src?: Directory | string = "."
+): Promise<Directory | string>
 
 deploy(
-  siteDir: String!, 
-  siteId: String!, 
-  src: String!, 
-  token: String!
-): String
+  src: Directory | string,
+  token: Secret | string,
+  siteId: string,
+  siteDir: string
+): Promise<string>
 ```
 
 ## Programmatic usage
@@ -47,7 +49,7 @@ deploy(
 You can also use this pipeline programmatically:
 
 ```typescript
-import { build, deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.6.0/mod.ts";
+import { build, deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.7.0/mod.ts";
 
 await build();
 await deploy();

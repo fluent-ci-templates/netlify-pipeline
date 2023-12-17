@@ -1,4 +1,6 @@
-import Client, { connect } from "../../deps.ts";
+import { Client, Directory, Secret } from "../../sdk/client.gen.ts";
+import { connect } from "../../sdk/connect.ts";
+import { getDirectory, getNetlifyAuthToken } from "./lib.ts";
 
 export enum Job {
   build = "build",
@@ -7,13 +9,23 @@ export enum Job {
 
 export const exclude = [".devbox", "node_modules", ".fluentci"];
 
-export const build = async (src = ".") => {
+/**
+ * @function
+ * @description Build the project
+ * @param {string | Directory} src
+ * @returns {string}
+ */
+export async function build(
+  src: Directory | string = "."
+): Promise<Directory | string> {
+  let id = "";
   await connect(async (client: Client) => {
-    const context = client.host().directory(src);
+    const context = getDirectory(client, src);
     const ctr = client
       .pipeline(Job.build)
       .container()
-      .from("ghcr.io/fluentci-io/bun:latest")
+      .from("pkgxdev/pkgx:latest")
+      .withExec(["pkgx", "install", "node@18.16.1", "bun"])
       .withMountedCache(
         "/root/.bun/install/cache",
         client.cacheVolume("bun-cache")
@@ -21,30 +33,38 @@ export const build = async (src = ".") => {
       .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
       .withDirectory("/app", context, { exclude })
       .withWorkdir("/app")
-      .withExec(["sh", "-c", 'eval "$(devbox global shellenv)" && bun install'])
+      .withExec(["bun", "install"])
       .withExec([
         "sh",
         "-c",
         'eval "$(devbox global shellenv)" && bun run build',
-      ]);
+      ])
+      .withExec(["cp", "-r", "/app/dist", "/dist"]);
 
-    const result = await ctr.stdout();
+    await ctr.stdout();
 
     await ctr.directory("/app/dist").export("./dist");
 
-    console.log(result);
+    id = await ctr.directory("/dist").id();
   });
-  return "Done";
-};
+  return id;
+}
 
-export const deploy = async (
-  src = ".",
-  token?: string,
-  siteId?: string,
-  siteDir?: string
-) => {
+/**
+ * @function
+ * @description Deploy to Netlify
+ * @param {string | Directory} src
+ * @returns {string}
+ */
+export async function deploy(
+  src: Directory | string,
+  token: Secret | string,
+  siteId: string,
+  siteDir: string
+): Promise<string> {
+  let result = "";
   await connect(async (client: Client) => {
-    const context = client.host().directory(src);
+    const context = getDirectory(client, src);
 
     if (!Deno.env.has("NETLIFY_AUTH_TOKEN") && !token) {
       console.log("NETLIFY_AUTH_TOKEN is not set");
@@ -58,7 +78,14 @@ export const deploy = async (
 
     const dir = Deno.env.get("NETLIFY_SITE_DIR") || siteDir || ".";
 
-    let deployCommand = `eval "$(devbox global shellenv)" && bun x netlify-cli status && bun x netlify-cli deploy --dir ${dir}`;
+    const secret = getNetlifyAuthToken(client, token);
+
+    if (!secret) {
+      console.log("NETLIFY_AUTH_TOKEN is not set");
+      Deno.exit(1);
+    }
+
+    let deployCommand = `bunx netlify-cli status && bunx netlify-cli deploy --dir ${dir}`;
 
     if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
       deployCommand += " --prod";
@@ -67,16 +94,14 @@ export const deploy = async (
     const ctr = client
       .pipeline(Job.deploy)
       .container()
-      .from("ghcr.io/fluentci-io/bun:latest")
+      .from("pkgxdev/pkgx:latest")
+      .withExec(["pkgx", "install", "node@18.16.1", "bun"])
       .withMountedCache(
         "/root/.bun/install/cache",
         client.cacheVolume("bun-cache")
       )
       .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
-      .withEnvVariable(
-        "NETLIFY_AUTH_TOKEN",
-        Deno.env.get("NETLIFY_AUTH_TOKEN") || token!
-      )
+      .withSecretVariable("NETLIFY_AUTH_TOKEN", secret)
       .withEnvVariable(
         "NETLIFY_SITE_ID",
         Deno.env.get("NETLIFY_SITE_ID") || siteId!
@@ -85,29 +110,17 @@ export const deploy = async (
       .withWorkdir("/app")
       .withExec(["sh", "-c", deployCommand]);
 
-    const result = await ctr.stdout();
-
-    console.log(result);
+    result = await ctr.stdout();
   });
-  return "Done";
-};
+  return result;
+}
 
 export type JobExec = (
-  src?: string,
-  token?: string,
-  siteId?: string,
-  siteDir?: string
-) =>
-  | Promise<string>
-  | ((
-      src?: string,
-      token?: string,
-      siteId?: string,
-      siteDir?: string,
-      options?: {
-        ignore: string[];
-      }
-    ) => Promise<string>);
+  src: Directory | string,
+  token: Secret | string,
+  siteId: string,
+  siteDir: string
+) => Promise<Directory | string>;
 
 export const runnableJobs: Record<Job, JobExec> = {
   [Job.build]: build,

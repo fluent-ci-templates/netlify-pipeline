@@ -12,7 +12,12 @@ export default async function pipeline(src = ".", args: string[] = []) {
     return;
   }
   await build();
-  await deploy();
+  await deploy(
+    src,
+    Deno.env.get("NETLIFY_AUTH_TOKEN")!,
+    Deno.env.get("NETLIFY_SITE_ID")!,
+    Deno.env.get("NETLIFY_SITE_DIR")!
+  );
 }
 
 async function runSpecificJobs(args: jobs.Job[]) {
@@ -21,6 +26,11 @@ async function runSpecificJobs(args: jobs.Job[]) {
     if (!job) {
       throw new Error(`Job ${name} not found`);
     }
-    await job();
+    await job(
+      ".",
+      Deno.env.get("NETLIFY_AUTH_TOKEN")!,
+      Deno.env.get("NETLIFY_SITE_ID")!,
+      Deno.env.get("NETLIFY_SITE_DIR")!
+    );
   }
 }
