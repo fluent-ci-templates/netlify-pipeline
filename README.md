@@ -13,7 +13,15 @@ A ready-to-use CI/CD Pipeline for deploying your applications to [Netlify](https
 Run the following command:
 
 ```bash
-dagger run fluentci netlify_pipeline
+fluentci run netlify_pipeline
+```
+
+## Dagger Module
+
+Use as a [Dagger](https://dagger.io) module:
+
+```bash
+dagger mod install github.com/fluent-ci-templates/netlify-pipeline@mod
 ```
 
 ## Environment Variables
