@@ -57,7 +57,7 @@ deploy(
 You can also use this pipeline programmatically:
 
 ```typescript
-import { build, deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.7.1/mod.ts";
+import { build, deploy } from "https://pkg.fluentci.io/netlify_pipeline@v0.7.2/mod.ts";
 
 await build();
 await deploy();
