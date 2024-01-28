@@ -1,5 +1,4 @@
-import { Client, Directory, Secret } from "../../sdk/client.gen.ts";
-import { connect } from "../../sdk/connect.ts";
+import { Directory, Secret, dag } from "../../sdk/client.gen.ts";
 import { getDirectory, getNetlifyAuthToken } from "./lib.ts";
 
 export enum Job {
@@ -18,39 +17,33 @@ export const exclude = [".devbox", "node_modules", ".fluentci"];
 export async function build(
   src: Directory | string = "."
 ): Promise<Directory | string> {
-  let id = "";
-  await connect(async (client: Client) => {
-    const context = getDirectory(client, src);
-    const ctr = client
-      .pipeline(Job.build)
-      .container()
-      .from("pkgxdev/pkgx:latest")
-      .withExec(["apt-get", "update"])
-      .withExec([
-        "apt-get",
-        "install",
-        "-y",
-        "ca-certificates",
-        "build-essential",
-      ])
-      .withExec(["pkgx", "install", "node@18.19.0", "bun@1.0.0", "git"])
-      .withMountedCache(
-        "/root/.bun/install/cache",
-        client.cacheVolume("bun-cache")
-      )
-      .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
-      .withDirectory("/app", context, { exclude })
-      .withWorkdir("/app")
-      .withExec(["bun", "install"])
-      .withExec(["bun", "run", "build"])
-      .withExec(["cp", "-r", "/app/dist", "/dist"]);
+  const context = await getDirectory(dag, src);
+  const ctr = dag
+    .pipeline(Job.build)
+    .container()
+    .from("pkgxdev/pkgx:latest")
+    .withExec(["apt-get", "update"])
+    .withExec([
+      "apt-get",
+      "install",
+      "-y",
+      "ca-certificates",
+      "build-essential",
+    ])
+    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.0.25", "git"])
+    .withMountedCache("/root/.bun/install/cache", dag.cacheVolume("bun-cache"))
+    .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
+    .withDirectory("/app", context, { exclude })
+    .withWorkdir("/app")
+    .withExec(["bun", "install"])
+    .withExec(["bun", "run", "build"])
+    .withExec(["cp", "-r", "/app/dist", "/dist"]);
 
-    await ctr.stdout();
+  await ctr.stdout();
 
-    await ctr.directory("/app/dist").export("./dist");
+  await ctr.directory("/app/dist").export("./dist");
 
-    id = await ctr.directory("/dist").id();
-  });
+  const id = await ctr.directory("/dist").id();
   return id;
 }
 
@@ -66,63 +59,57 @@ export async function deploy(
   siteId: string,
   siteDir: string
 ): Promise<string> {
-  let result = "";
-  await connect(async (client: Client) => {
-    const context = getDirectory(client, src);
+  const context = await getDirectory(dag, src);
 
-    if (!Deno.env.has("NETLIFY_AUTH_TOKEN") && !token) {
-      console.log("NETLIFY_AUTH_TOKEN is not set");
-      Deno.exit(1);
-    }
+  if (!Deno.env.has("NETLIFY_AUTH_TOKEN") && !token) {
+    console.log("NETLIFY_AUTH_TOKEN is not set");
+    Deno.exit(1);
+  }
 
-    if (!Deno.env.has("NETLIFY_SITE_ID") && !siteId) {
-      console.log("NETLIFY_SITE_ID is not set");
-      Deno.exit(1);
-    }
+  if (!Deno.env.has("NETLIFY_SITE_ID") && !siteId) {
+    console.log("NETLIFY_SITE_ID is not set");
+    Deno.exit(1);
+  }
 
-    const dir = Deno.env.get("NETLIFY_SITE_DIR") || siteDir || ".";
+  const dir = Deno.env.get("NETLIFY_SITE_DIR") || siteDir || ".";
 
-    const secret = getNetlifyAuthToken(client, token);
+  const secret = await getNetlifyAuthToken(dag, token);
 
-    if (!secret) {
-      console.log("NETLIFY_AUTH_TOKEN is not set");
-      Deno.exit(1);
-    }
+  if (!secret) {
+    console.log("NETLIFY_AUTH_TOKEN is not set");
+    Deno.exit(1);
+  }
 
-    let deployCommand = `bunx netlify-cli status && bunx netlify-cli deploy --dir ${dir}`;
+  let deployCommand = `bunx netlify-cli status && bunx netlify-cli deploy --dir ${dir}`;
 
-    if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
-      deployCommand += " --prod";
-    }
+  if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
+    deployCommand += " --prod";
+  }
 
-    const ctr = client
-      .pipeline(Job.deploy)
-      .container()
-      .from("pkgxdev/pkgx:latest")
-      .withExec([
-        "apt-get",
-        "install",
-        "-y",
-        "ca-certificates",
-        "build-essential",
-      ])
-      .withExec(["pkgx", "install", "node@18.19.0", "bun@1.0.0", "git"])
-      .withMountedCache(
-        "/root/.bun/install/cache",
-        client.cacheVolume("bun-cache")
-      )
-      .withMountedCache("/app/node_modules", client.cacheVolume("node_modules"))
-      .withSecretVariable("NETLIFY_AUTH_TOKEN", secret)
-      .withEnvVariable(
-        "NETLIFY_SITE_ID",
-        Deno.env.get("NETLIFY_SITE_ID") || siteId!
-      )
-      .withDirectory("/app", context, { exclude })
-      .withWorkdir("/app")
-      .withExec(["sh", "-c", deployCommand]);
+  const ctr = dag
+    .pipeline(Job.deploy)
+    .container()
+    .from("pkgxdev/pkgx:latest")
+    .withExec([
+      "apt-get",
+      "install",
+      "-y",
+      "ca-certificates",
+      "build-essential",
+    ])
+    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.0.25", "git"])
+    .withMountedCache("/root/.bun/install/cache", dag.cacheVolume("bun-cache"))
+    .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
+    .withSecretVariable("NETLIFY_AUTH_TOKEN", secret)
+    .withEnvVariable(
+      "NETLIFY_SITE_ID",
+      Deno.env.get("NETLIFY_SITE_ID") || siteId!
+    )
+    .withDirectory("/app", context, { exclude })
+    .withWorkdir("/app")
+    .withExec(["sh", "-c", deployCommand]);
 
-    result = await ctr.stdout();
-  });
+  const result = await ctr.stdout();
   return result;
 }
 
