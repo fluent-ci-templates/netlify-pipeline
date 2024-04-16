@@ -79,7 +79,7 @@ export async function deploy(
     Deno.exit(1);
   }
 
-  let deployCommand = `bunx netlify-cli deploy --dir ${dir}`;
+  let deployCommand = `npx netlify-cli deploy --dir ${dir}`;
 
   if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
     deployCommand += " --prod";
@@ -96,8 +96,7 @@ export async function deploy(
       "ca-certificates",
       "build-essential",
     ])
-    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.1.3", "git"])
-    .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
+    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.1.3", "git", "npm"])
     .withSecretVariable("NETLIFY_AUTH_TOKEN", secret)
     .withEnvVariable(
       "NETLIFY_SITE_ID",
@@ -105,7 +104,7 @@ export async function deploy(
     )
     .withDirectory("/app", context, { exclude })
     .withWorkdir("/app")
-    .withExec(["bunx", "netlify-cli", "status"])
+    .withExec(["npx", "netlify-cli", "status"])
     .withExec(deployCommand.split(" "));
 
   const result = await ctr.stdout();
