@@ -31,7 +31,6 @@ export async function build(
       "build-essential",
     ])
     .withExec(["pkgx", "install", "node@18.19.0", "bun@1.1.3", "git"])
-    .withMountedCache("/root/.bun/install/cache", dag.cacheVolume("bun-cache"))
     .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
     .withDirectory("/app", context, { exclude })
     .withWorkdir("/app")
@@ -98,7 +97,6 @@ export async function deploy(
       "build-essential",
     ])
     .withExec(["pkgx", "install", "node@18.19.0", "bun@1.1.3", "git"])
-    .withMountedCache("/root/.bun/install/cache", dag.cacheVolume("bun-cache"))
     .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
     .withSecretVariable("NETLIFY_AUTH_TOKEN", secret)
     .withEnvVariable(
