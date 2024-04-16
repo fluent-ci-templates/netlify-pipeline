@@ -80,7 +80,7 @@ export async function deploy(
     Deno.exit(1);
   }
 
-  let deployCommand = `bunx netlify-cli status && bunx netlify-cli deploy --dir ${dir}`;
+  let deployCommand = `bunx netlify-cli deploy --dir ${dir}`;
 
   if (Deno.env.get("PRODUCTION_DEPLOY") === "1") {
     deployCommand += " --prod";
@@ -107,7 +107,8 @@ export async function deploy(
     )
     .withDirectory("/app", context, { exclude })
     .withWorkdir("/app")
-    .withExec(["bash", "-c", deployCommand]);
+    .withExec(["bunx", "netlify-cli", "status"])
+    .withExec(deployCommand.split(" "));
 
   const result = await ctr.stdout();
   return result;
