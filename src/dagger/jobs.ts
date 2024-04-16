@@ -17,7 +17,7 @@ export const exclude = [".devbox", "node_modules", ".fluentci"];
 export async function build(
   src: Directory | string = "."
 ): Promise<Directory | string> {
-  const context = await getDirectory(dag, src);
+  const context = await getDirectory(src);
   const ctr = dag
     .pipeline(Job.build)
     .container()
@@ -30,7 +30,7 @@ export async function build(
       "ca-certificates",
       "build-essential",
     ])
-    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.0.25", "git"])
+    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.1.3", "git"])
     .withMountedCache("/root/.bun/install/cache", dag.cacheVolume("bun-cache"))
     .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
     .withDirectory("/app", context, { exclude })
@@ -59,7 +59,7 @@ export async function deploy(
   siteId: string,
   siteDir: string
 ): Promise<string> {
-  const context = await getDirectory(dag, src);
+  const context = await getDirectory(src);
 
   if (!Deno.env.has("NETLIFY_AUTH_TOKEN") && !token) {
     console.log("NETLIFY_AUTH_TOKEN is not set");
@@ -73,7 +73,7 @@ export async function deploy(
 
   const dir = Deno.env.get("NETLIFY_SITE_DIR") || siteDir || ".";
 
-  const secret = await getNetlifyAuthToken(dag, token);
+  const secret = await getNetlifyAuthToken(token);
 
   if (!secret) {
     console.log("NETLIFY_AUTH_TOKEN is not set");
@@ -97,7 +97,7 @@ export async function deploy(
       "ca-certificates",
       "build-essential",
     ])
-    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.0.25", "git"])
+    .withExec(["pkgx", "install", "node@18.19.0", "bun@1.1.3", "git"])
     .withMountedCache("/root/.bun/install/cache", dag.cacheVolume("bun-cache"))
     .withMountedCache("/app/node_modules", dag.cacheVolume("node_modules"))
     .withSecretVariable("NETLIFY_AUTH_TOKEN", secret)
