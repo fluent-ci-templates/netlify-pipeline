@@ -1,7 +1,7 @@
 {
   "name": "netlify",
   "sdk": "github.com/fluentci-io/daggerverse/deno-sdk@main",
-  "version": "v0.8.0",
+  "version": "v0.8.1",
   "description": "",
   "author": "Tsiry Sandratraina",
   "license": "MIT"

@@ -107,7 +107,7 @@ export async function deploy(
     )
     .withDirectory("/app", context, { exclude })
     .withWorkdir("/app")
-    .withExec(["sh", "-c", deployCommand]);
+    .withExec(["bash", "-c", deployCommand]);
 
   const result = await ctr.stdout();
   return result;
